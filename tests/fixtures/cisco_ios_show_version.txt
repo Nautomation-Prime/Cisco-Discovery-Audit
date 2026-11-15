@@ -1,0 +1,7 @@
+Cisco IOS XE Software, Version 17.09.04a, RELEASE SOFTWARE (fc2)
+ROM: IOS-XE ROMMON
+core-sw-01 uptime is 2 years, 3 weeks, 4 days, 5 hours, 6 minutes
+System image file is "flash:packages.conf"
+cisco C9300-48P (X86) processor with 8388608K bytes of memory.
+Processor board ID FCW0000A001
+Configuration register is 0x102

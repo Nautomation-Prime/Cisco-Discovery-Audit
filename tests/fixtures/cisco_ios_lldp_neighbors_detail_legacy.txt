@@ -1,0 +1,23 @@
+------------------------------------------------
+Local Intf: Gi1/0/2
+Chassis id: dddd.eeee.ffff
+Port id: Gi2/0/24
+Port Description: GigabitEthernet2/0/24
+System Name: access-sw-03.example.test
+
+System Description:
+Cisco IOS Software, C3750 Software (C3750-IPSERVICESK9-M), Version 12.2(55)SE, RELEASE SOFTWARE (fc2)
+
+Time remaining: 109 seconds
+System Capabilities: B,R
+Enabled Capabilities: B
+Management Addresses:
+    IP: 192.0.2.30
+Auto Negotiation - supported, enabled
+Physical media capabilities - not advertised
+Media Attachment Unit type: 30
+Vlan ID: 20
+
+------------------------------------------------
+
+Total entries displayed: 1

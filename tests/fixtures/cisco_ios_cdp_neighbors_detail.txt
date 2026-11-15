@@ -1,0 +1,11 @@
+Device ID: edge-sw-02.example.test
+Entry address(es):
+  IP address: 192.0.2.20
+Platform: cisco C9300-48P, Capabilities: Router Switch IGMP
+Interface: GigabitEthernet1/0/1,  Port ID (outgoing port): GigabitEthernet1/0/48
+Holdtime : 123 sec
+
+Version :
+Cisco IOS XE Software, Version 17.09.04a
+
+advertisement version: 2

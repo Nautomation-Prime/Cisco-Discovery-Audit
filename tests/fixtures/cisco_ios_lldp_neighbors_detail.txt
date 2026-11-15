@@ -1,0 +1,23 @@
+------------------------------------------------
+Local Intf: Gi1/0/1
+Chassis id: aaaa.bbbb.cccc
+Port id: Gi1/0/48
+Port Description: GigabitEthernet1/0/48
+System Name: edge-sw-02.example.test
+
+System Description:
+Cisco IOS XE Software, Version 17.09.04a
+
+Time remaining: 112 seconds
+System Capabilities: B,R
+Enabled Capabilities: B,R
+Management Addresses:
+    IP: 192.0.2.20
+Auto Negotiation - supported, enabled
+Physical media capabilities - not advertised
+Media Attachment Unit type - not advertised
+Vlan ID: 10
+
+------------------------------------------------
+
+Total entries displayed: 1

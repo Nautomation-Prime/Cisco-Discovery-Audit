@@ -1,0 +1,119 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nautomation-prime-cisco-discovery-audit"
+version = "1.0.0"
+description = "Cisco CDP and LLDP discovery audit with Excel reporting"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [
+  { name = "Christopher Davies" }
+]
+keywords = ["cdp", "lldp", "network", "audit", "cisco", "netmiko"]
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12"
+]
+
+dependencies = [
+  "textfsm==1.1.3",
+  "openpyxl>=3.1.2",
+  "PyYAML>=6.0",
+  "pydantic>=2.7,<3",
+  "paramiko>=2.12.0",
+  "netmiko>=4.2.0",
+  "textual>=0.70.0",
+  "tomli>=2.0.0; python_version < '3.11'",
+  "pywin32>=305; sys_platform == 'win32'"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "ruff>=0.6.0",
+  "mypy>=1.11.0",
+  "types-PyYAML>=6.0",
+  "types-paramiko>=3.0"
+]
+build = [
+  "pyinstaller>=6.0",
+  "packaging>=23.0"
+]
+
+[project.scripts]
+cisco-discovery-audit = "cdp_audit.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/Nautomation-Prime/Cisco-Discovery-Audit"
+Repository = "https://github.com/Nautomation-Prime/Cisco-Discovery-Audit"
+Releases = "https://github.com/Nautomation-Prime/Cisco-Discovery-Audit/releases"
+Issues = "https://github.com/Nautomation-Prime/Cisco-Discovery-Audit/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cdp_audit*"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = ["portable_env", "python_runtime", "build", "release"]
+
+[tool.ruff.lint]
+# Deliberately excludes pyupgrade (UP): the typing-modernisation churn it
+# wants would swamp real findings. Worth a separate pass if desired.
+select = [
+  "E",    # pycodestyle
+  "F",    # pyflakes
+  "W",    # pycodestyle warnings
+  "I",    # import sorting
+  "B",    # bugbear
+  "C4",   # comprehensions
+  "LOG",  # logging misuse
+  "G",    # logging format
+  "S",    # bandit security checks
+]
+ignore = [
+  "B008",  # function call in default argument
+  "S104",  # binding to all interfaces (not applicable here)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests legitimately assert, use fake credentials, and monkeypatch internals.
+"tests/*" = ["S101", "S105", "S106", "S107", "B018"]
+# Widget updates and the logging handler must never raise into their caller:
+# a handler that raises breaks logging itself, and a query against a torn-down
+# screen is expected during shutdown.
+"cdp_audit/tui.py" = ["S110"]
+
+[tool.mypy]
+# No python_version pin: mypy uses the running interpreter, so the CI matrix
+# checks each supported version natively. Pinning it made mypy reject 3.12+
+# syntax in third-party stubs that happened to be installed.
+files = ["cdp_audit"]
+# Teaches mypy pydantic's generated __init__ signatures and field defaults.
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true
+warn_unused_ignores = false
+warn_redundant_casts = true
+warn_unreachable = true
+no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+# sys.platform checks narrow to whichever platform mypy runs on, so the
+# non-Windows branches look unreachable on Windows and vice versa.
+module = "cdp_audit.credentials"
+warn_unreachable = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

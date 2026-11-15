@@ -1,0 +1,111 @@
+name: Premium Windows Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-release:
+    name: Build website-ready Windows artifact
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install application, test, and build dependencies
+        run: python -m pip install -e ".[dev,build]"
+
+      - name: Run tests
+        run: python -m pytest tests/ -q
+
+      - name: Verify tag matches project version
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: python
+        run: |
+          import pathlib
+          import tomllib
+
+          version = tomllib.loads(pathlib.Path("pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+          expected = f"v{version}"
+          actual = "${{ github.ref_name }}"
+          if actual != expected:
+              raise SystemExit(f"Tag {actual!r} does not match {expected!r}")
+
+      - name: Build one-folder executable
+        run: pyinstaller --noconfirm --clean cisco_discovery_audit.spec
+
+      - name: Sign executable when certificate secrets are configured
+        shell: pwsh
+        env:
+          WINDOWS_SIGNING_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_BASE64 }}
+          WINDOWS_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_CERTIFICATE_BASE64)) {
+            Write-Output "Signing certificate is not configured; leaving this build unsigned."
+            exit 0
+          }
+          $certificatePath = Join-Path $env:RUNNER_TEMP "nautomation-prime-signing.pfx"
+          try {
+            [IO.File]::WriteAllBytes(
+              $certificatePath,
+              [Convert]::FromBase64String($env:WINDOWS_SIGNING_CERTIFICATE_BASE64)
+            )
+            $signTool = Get-ChildItem `
+              "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" |
+              Sort-Object FullName |
+              Select-Object -Last 1 -ExpandProperty FullName
+            if (-not $signTool) {
+              throw "signtool.exe was not found on the Windows runner"
+            }
+            & $signTool sign /fd SHA256 /td SHA256 `
+              /tr "http://timestamp.digicert.com" `
+              /f $certificatePath `
+              /p $env:WINDOWS_SIGNING_CERTIFICATE_PASSWORD `
+              "dist\NautomationPrimeCiscoDiscoveryAudit\NautomationPrimeCiscoDiscoveryAudit.exe"
+            if ($LASTEXITCODE -ne 0) {
+              throw "Authenticode signing failed with exit code $LASTEXITCODE"
+            }
+          }
+          finally {
+            if (Test-Path -LiteralPath $certificatePath) {
+              Remove-Item -LiteralPath $certificatePath -Force
+            }
+          }
+
+      - name: Create ZIP, checksum, release notes, and product manifest
+        run: python scripts/package_release.py
+
+      - name: Smoke-test packaged application from its release folder
+        shell: pwsh
+        run: |
+          $packageRoot = Get-ChildItem -LiteralPath "build\package-release" -Directory |
+            Select-Object -First 1
+          Push-Location $packageRoot.FullName
+          try {
+            & ".\NautomationPrimeCiscoDiscoveryAudit.exe" --check-install
+            if ($LASTEXITCODE -ne 0) {
+              throw "Packaged smoke test failed with exit code $LASTEXITCODE"
+            }
+          }
+          finally {
+            Pop-Location
+          }
+
+      - name: Upload private website handoff artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nautomation-prime-cisco-discovery-audit-${{ github.ref_name }}
+          path: release/*
+          if-no-files-found: error
+          retention-days: 30
